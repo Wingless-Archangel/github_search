@@ -24,23 +24,29 @@ def main(query, token) -> None:
 def call_api(headers: dict, querystring: dict) -> json:
     result = {}
     url = URL
-    while True:
-        print(f"current url is {url} and page is {querystring['page']}")
-        response = requests.request("GET", url, headers=headers, params=querystring)
-        res_header = response.headers
-        response_json = response.json()
-        link_header = re.split(", ", res_header["Link"])
-        link_dict = link_header_parser(link_header)
+    try:
+        while True:
+            print(f"current url is {url} and page is {querystring['page']}")
+            response = requests.request("GET", url, headers=headers, params=querystring)
+            # raise exception if status not ok (HTTP 200)
+            response.raise_for_status()
+            res_header = response.headers
+            response_json = response.json()
+            link_header = re.split(", ", res_header["Link"])
+            link_dict = link_header_parser(link_header)
 
-        for item in response_json["items"]:
-            name = item["name"]
-            html_url = item["html_url"]
-            result[name] = html_url
+            for item in response_json["items"]:
+                name = item["name"]
+                html_url = item["html_url"]
+                result[name] = html_url
 
-        if "next" not in link_dict:
-            break
-        else:
-            querystring["page"] += 1
+            if "next" not in link_dict:
+                break
+            else:
+                querystring["page"] += 1
+    except requests.exceptions.HTTPError as err:
+        print(err)
+        exit(1)
 
     return result
 
